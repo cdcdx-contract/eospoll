@@ -1,0 +1,134 @@
+{
+  "version": "eosio::abi/1.0",
+  "types": [{
+      "new_type_name": "account_name",
+      "type": "name"
+      }
+  ],
+  "structs": [{
+      "name": "sidetransfer",
+      "base": "",
+      "fields": [
+        {"name": "id","type": "uint64"},
+        {"name": "from","type": "string"},
+        {"name": "to","type": "account_name"},
+        {"name": "quantity","type": "asset"},
+        {"name": "memo","type": "string"},
+        {"name": "index","type": "uint64"}
+      ]
+    },{
+      "name": "sidereqcount",
+      "base": "",
+      "fields": [
+        {"name": "id","type": "uint64"},
+        {"name": "g_index","type": "uint64"}
+      ]
+    },{
+      "name": "sidereqerror",
+      "base": "",
+      "fields": [
+        {"name": "id","type": "uint64"},
+        {"name": "index","type": "uint64"},
+        {"name": "error","type": "string"}
+      ]
+    },{
+      "name": "actioninfo",
+      "base": "",
+      "fields": [
+        {"name": "id","type": "uint64"},
+        {"name": "receiver","type": "account_name"},
+        {"name": "code","type": "account_name"},
+        {"name": "action","type": "account_name"}
+      ]
+    },{
+      "name": "eostransfer",
+      "base": "",
+      "fields": [
+        {"name": "id","type": "uint64"},
+        {"name": "from","type": "account_name"},
+        {"name": "to","type": "account_name"},
+        {"name": "quantity","type": "asset"},
+        {"name": "memo","type": "string"}
+      ]
+    },{
+      "name": "sidetranargs",
+      "base": "",
+      "fields": [
+      	{"name": "from","type": "string"},
+        {"name": "to","type": "account_name"},
+        {"name": "quantity","type": "asset"},
+        {"name": "memo","type": "string"},
+        {"name": "index","type": "uint64"}
+      ]
+    },{
+      "name": "reset",
+      "base": "",
+      "fields": [
+      ]
+    }
+  ],
+  "actions": [{
+      "name": "transfer",
+      "type": "sidetranargs",
+      "ricardian_contract": ""
+    },{
+      "name": "reset",
+      "type": "reset",
+      "ricardian_contract": ""
+    }
+  ],
+  "tables": [{
+      "name": "eostransfer",
+      "index_type": "i64",
+      "key_names": [
+        "id"
+      ],
+      "key_types": [
+        "uint64"
+      ],
+      "type": "eostransfer"
+    },{
+      "name": "actioninfo",
+      "index_type": "i64",
+      "key_names": [
+        "id"
+      ],
+      "key_types": [
+        "uint64"
+      ],
+      "type": "actioninfo"
+    },{
+      "name": "sidetransfer",
+      "index_type": "i64",
+      "key_names": [
+        "id"
+      ],
+      "key_types": [
+        "uint64"
+      ],
+      "type": "sidetransfer"
+    },{
+      "name": "sidereqcount",
+      "index_type": "i64",
+      "key_names": [
+        "id"
+      ],
+      "key_types": [
+        "uint64"
+      ],
+      "type": "sidereqcount"
+    },{
+      "name": "sidereqerror",
+      "index_type": "i64",
+      "key_names": [
+        "id"
+      ],
+      "key_types": [
+        "uint64"
+      ],
+      "type": "sidereqerror"
+    }
+  ],
+  "ricardian_clauses": [
+  ]
+}
