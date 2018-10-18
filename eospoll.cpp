@@ -31,7 +31,7 @@ extern "C" {
 
 	struct betnumber {
 	   uint64_t          id;
-	   std::string       offerbetid;
+	   uint64_t          offerbetid;
 	   uint64_t          number;
 	   uint64_t primary_key()const { return id; }
 	};
@@ -87,7 +87,7 @@ extern "C" {
 
 	 //
 	 uint64_t bet_total = cur_betstate_itr->total;
-	 uint64_t bet_quantity = cur_betstate_itr->quantity;
+	 eosio::asset bet_quantity = cur_betstate_itr->quantity;
 
 	 //
 	 offerbet_index offerbets(_self, _self);
@@ -150,16 +150,18 @@ extern "C" {
          uint32_t t_now = now();
          checksum256 hash;
          sha256((char*)(&t_now), sizeof(uint32_t), &hash);
-         bet_result = (hash.hash[15]) % cur_betstate_itr->total;
+         uint64_t bet_result = (hash.hash[15]) % cur_betstate_itr->total;
 
          //
-         cur_betstate_itr->result = bet_result;
+		 betstates.modify( cur_betstate_itr, 0, [&](auto& info) {
+			 info.result = bet_result;
+		 });
 
          //
-         betnumber_itr = betnumbers.find(bet_result);
+         auto betnumber_itr = betnumbers.find(bet_result);
 
          //
-         offerbet_itr = offerbets.find(betnumber_itr->offerbetid);
+         auto offerbet_itr = offerbets.find(betnumber_itr->offerbetid);
 
          eosio::action(
             eosio::permission_level{ _self, N(active) },
