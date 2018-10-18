@@ -6,42 +6,7 @@
       }
   ],
   "structs": [{
-      "name": "sidetransfer",
-      "base": "",
-      "fields": [
-        {"name": "id","type": "uint64"},
-        {"name": "from","type": "string"},
-        {"name": "to","type": "account_name"},
-        {"name": "quantity","type": "asset"},
-        {"name": "memo","type": "string"},
-        {"name": "index","type": "uint64"}
-      ]
-    },{
-      "name": "sidereqcount",
-      "base": "",
-      "fields": [
-        {"name": "id","type": "uint64"},
-        {"name": "g_index","type": "uint64"}
-      ]
-    },{
-      "name": "sidereqerror",
-      "base": "",
-      "fields": [
-        {"name": "id","type": "uint64"},
-        {"name": "index","type": "uint64"},
-        {"name": "error","type": "string"}
-      ]
-    },{
-      "name": "actioninfo",
-      "base": "",
-      "fields": [
-        {"name": "id","type": "uint64"},
-        {"name": "receiver","type": "account_name"},
-        {"name": "code","type": "account_name"},
-        {"name": "action","type": "account_name"}
-      ]
-    },{
-      "name": "eostransfer",
+      "name": "offerbet",
       "base": "",
       "fields": [
         {"name": "id","type": "uint64"},
@@ -51,14 +16,29 @@
         {"name": "memo","type": "string"}
       ]
     },{
-      "name": "sidetranargs",
+      "name": "betnumber",
       "base": "",
       "fields": [
-      	{"name": "from","type": "string"},
-        {"name": "to","type": "account_name"},
+        {"name": "id","type": "uint64"},
+        {"name": "offerbetid","type": "uint64"},
+        {"name": "number","type": "uint64"}
+      ]
+    },{
+      "name": "globalindex",
+      "base": "",
+      "fields": [
+        {"name": "id","type": "uint64"},
+        {"name": "gindex","type": "uint64"}
+      ]
+    },{
+      "name": "betstate",
+      "base": "",
+      "fields": [
+        {"name": "id","type": "uint64"},
+        {"name": "round","type": "uint64"},
+        {"name": "total","type": "uint64"},
         {"name": "quantity","type": "asset"},
-        {"name": "memo","type": "string"},
-        {"name": "index","type": "uint64"}
+        {"name": "result","type": "uint64"}
       ]
     },{
       "name": "reset",
@@ -68,8 +48,8 @@
     }
   ],
   "actions": [{
-      "name": "transfer",
-      "type": "sidetranargs",
+      "name": "reveal",
+      "type": "revealargs",
       "ricardian_contract": ""
     },{
       "name": "reset",
@@ -78,7 +58,7 @@
     }
   ],
   "tables": [{
-      "name": "eostransfer",
+      "name": "offerbet",
       "index_type": "i64",
       "key_names": [
         "id"
@@ -86,9 +66,9 @@
       "key_types": [
         "uint64"
       ],
-      "type": "eostransfer"
+      "type": "offerbet"
     },{
-      "name": "actioninfo",
+      "name": "betnumber",
       "index_type": "i64",
       "key_names": [
         "id"
@@ -96,9 +76,9 @@
       "key_types": [
         "uint64"
       ],
-      "type": "actioninfo"
+      "type": "betnumber"
     },{
-      "name": "sidetransfer",
+      "name": "globalindex",
       "index_type": "i64",
       "key_names": [
         "id"
@@ -106,9 +86,9 @@
       "key_types": [
         "uint64"
       ],
-      "type": "sidetransfer"
+      "type": "globalindex"
     },{
-      "name": "sidereqcount",
+      "name": "betstate",
       "index_type": "i64",
       "key_names": [
         "id"
@@ -116,17 +96,7 @@
       "key_types": [
         "uint64"
       ],
-      "type": "sidereqcount"
-    },{
-      "name": "sidereqerror",
-      "index_type": "i64",
-      "key_names": [
-        "id"
-      ],
-      "key_types": [
-        "uint64"
-      ],
-      "type": "sidereqerror"
+      "type": "betstate"
     }
   ],
   "ricardian_clauses": [

@@ -150,6 +150,7 @@ extern "C" {
          uint32_t t_now = now();
          checksum256 hash;
          sha256((char*)(&t_now), sizeof(uint32_t), &hash);
+         //uint64_t bet_result = N(hash.hash);
          uint64_t bet_result = (hash.hash[15]) % cur_betstate_itr->total;
 
          //
