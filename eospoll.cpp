@@ -4,18 +4,19 @@
  * */
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/asset.hpp>
+#include <eosiolib/crypto.h>
 #include <string>
 
 extern "C" {
 	struct transfer_args {
-	   account_name  from;
-	   account_name  to;
-	   eosio::asset         quantity;
-	   string        memo;
+	   account_name    from;
+	   account_name    to;
+	   eosio::asset    quantity;
+	   std::string     memo;
 	};
 
 	struct reveal_args {
-	   uint64        tip;
+	   uint64_t        tip;
 	};
 
     struct offerbet {
@@ -85,8 +86,14 @@ extern "C" {
 	 }
 
 	 //
+	 offerbet_index offerbets(_self, _self);
+
+	 //
+	 betnumber_index betnumbers(_self, _self);
+
+	 //
 	 if(code == N(eosio.token) && action == N(transfer)) {
-		 transferargs args = eosio::unpack_action_data<transfer_args>();
+		 transfer_args args = eosio::unpack_action_data<transfer_args>();
 		 if(args.to != N(eospoll)) {
 			 return;
 		 }
@@ -99,7 +106,6 @@ extern "C" {
 	    eosio_assert( args.quantity.is_valid(), "invalid quantity" );
 	    eosio_assert( args.quantity.amount > 0, "must issue positive quantity" );
 
-		 offerbet_index offerbets(_self, _self);
 		 auto new_offerbet_itr = offerbets.emplace(_self, [&](auto& info){
 			info.id           = offerbets.available_primary_key();
 			info.from         = args.from;
@@ -108,13 +114,12 @@ extern "C" {
 			info.memo         = args.memo;
 		 });
 
-		 asset temp();
+		 eosio::asset temp();
 		 temp.set_amount(10000);
 
 		 while(args.quantity.amount > temp) {
 			 args.quantity = args.quantity - temp;
 
-			 betnumber_index betnumbers(_self, _self);
 			 auto new_betnumber_itr = betnumbers.emplace(_self, [&](auto& info){
 				info.id           = betnumbers.available_primary_key();
 				info.offerbetid   = new_offerbet_itr->id;
@@ -129,7 +134,7 @@ extern "C" {
 
 	 //
 	 if(code == N(eospoll) && action == N(reveal)) {
-		 revealargs args = eosio::unpack_action_data<reveal_args>();
+		 reveal_args args = eosio::unpack_action_data<reveal_args>();
 
 		 //
          uint32_t t_now = now();
@@ -141,11 +146,9 @@ extern "C" {
          cur_betstate_itr->result = bet_result;
 
          //
-         betnumber_index betnumbers(_self, _self);
          betnumber_itr = betnumbers.find(bet_result);
 
          //
-         offerbet_index offerbets(_self, _self);
          offerbet_itr = offerbets.find(betnumber_itr->offerbetid);
 
          eosio::action(
