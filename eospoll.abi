@@ -41,6 +41,12 @@
         {"name": "result","type": "uint64"}
       ]
     },{
+      "name": "revealargs",
+      "base": "",
+      "fields": [
+      	{"name": "tip","type": "uint64"}
+      ]
+    },{
       "name": "reset",
       "base": "",
       "fields": [

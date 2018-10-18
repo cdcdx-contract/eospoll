@@ -8,14 +8,14 @@
 #include <string>
 
 extern "C" {
-	struct transfer_args {
+	struct transferargs {
 	   account_name    from;
 	   account_name    to;
 	   eosio::asset    quantity;
 	   std::string     memo;
 	};
 
-	struct reveal_args {
+	struct revealargs {
 	   uint64_t        tip;
 	};
 
@@ -97,7 +97,7 @@ extern "C" {
 
 	 //
 	 if(code == N(eosio.token) && action == N(transfer)) {
-		 transfer_args args = eosio::unpack_action_data<transfer_args>();
+		 transferargs args = eosio::unpack_action_data<transferargs>();
 		 if(args.to != N(eospoll)) {
 			 return;
 		 }
@@ -144,14 +144,15 @@ extern "C" {
 
 	 //
 	 if(code == N(eospoll) && action == N(reveal)) {
-		 reveal_args args = eosio::unpack_action_data<reveal_args>();
+		 revealargs args = eosio::unpack_action_data<revealargs>();
 
 		 //
          uint32_t t_now = now();
          checksum256 hash;
          sha256((char*)(&t_now), sizeof(uint32_t), &hash);
-         //uint64_t bet_result = N(hash.hash);
-         uint64_t bet_result = (hash.hash[15]) % cur_betstate_itr->total;
+         uint64_t bet_result = N(hash.hash);
+         bet_result = bet_result % cur_betstate_itr->total;
+         //uint64_t bet_result = (hash.hash[15]) % cur_betstate_itr->total;
 
          //
 		 betstates.modify( cur_betstate_itr, 0, [&](auto& info) {
