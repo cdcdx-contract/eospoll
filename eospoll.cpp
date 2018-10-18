@@ -71,19 +71,23 @@ extern "C" {
 	 }
 
 	 //
-	 uint64_t betindex = cur_globalindex_itr->gindex;
+	 uint64_t bet_index = cur_globalindex_itr->gindex;
 
 	 //
 	 betstate_index betstates(_self, _self);
-	 auto cur_betstate_itr = betstates.find(betindex);
+	 auto cur_betstate_itr = betstates.find(bet_index);
 	 if(cur_betstate_itr == betstates.end()) {
 		 cur_betstate_itr = betstates.emplace(_self, [&](auto& info){
 			 info.id      = betstates.available_primary_key();
-			 info.round   = betindex;
+			 info.round   = bet_index;
 			 info.total   = 0;
 			 info.result  = 0xFFFFFFFFFF;
 		 });
 	 }
+
+	 //
+	 uint64_t bet_total = cur_betstate_itr->total;
+	 uint64_t bet_quantity = cur_betstate_itr->quantity;
 
 	 //
 	 offerbet_index offerbets(_self, _self);
@@ -114,10 +118,10 @@ extern "C" {
 			info.memo         = args.memo;
 		 });
 
-		 eosio::asset temp();
+		 eosio::asset temp;
 		 temp.set_amount(10000);
 
-		 while(args.quantity.amount > temp) {
+		 while(args.quantity > temp) {
 			 args.quantity = args.quantity - temp;
 
 			 auto new_betnumber_itr = betnumbers.emplace(_self, [&](auto& info){
@@ -127,9 +131,15 @@ extern "C" {
 			 });
 
 			 //
-			 cur_betstate_itr->total ++;
-			 cur_betstate_itr->quantity += temp;
+			 bet_total ++;
+			 bet_quantity += temp;
 		 }
+
+		 //
+		 betstates.modify( cur_betstate_itr, 0, [&](auto& info) {
+			 info.total = bet_total;
+			 info.quantity = bet_quantity;
+		 });
 	 }
 
 	 //
