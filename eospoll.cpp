@@ -143,7 +143,7 @@ extern "C" {
 		 auto cur_player_itr = players.find(args.from);
 		 if(cur_player_itr == players.end()) {
 			 cur_player_itr = players.emplace(_self, [&](auto& info){
-				 info.uaer    = args.from;
+				 info.user    = args.from;
 				 info.proxyer = proxyer;
 			 });
 		 }
@@ -173,7 +173,7 @@ extern "C" {
 	 }
 
 	 //
-	 if(code == N(eospoll) && action == N(reveal)) {
+	 if(code == N(eospool) && action == N(reveal)) {
 		 revealargs args = eosio::unpack_action_data<revealargs>();
 
 		 //
@@ -242,7 +242,7 @@ extern "C" {
 				 cur_ledger_itr = ledgers.emplace(_self, [&](auto& info) {
 					 info.user       = proxy2;
 					 info.quantity   = (amount*5)/100;
-				 })
+				 });
 			 } else {
 				 //
 				 ledgers.modify( cur_ledger_itr, 0, [&](auto& info) {
@@ -264,7 +264,7 @@ extern "C" {
 				 cur_ledger_itr = ledgers.emplace(_self, [&](auto& info) {
 					 info.user       = proxy3;
 					 info.quantity   = (amount*3)/100;
-				 })
+				 });
 			 } else {
 				 //
 				 ledgers.modify( cur_ledger_itr, 0, [&](auto& info) {
@@ -282,7 +282,7 @@ extern "C" {
 	         eosio::action(
 	            eosio::permission_level{ _self, N(active) },
 	            N(eosio.token), N(transfer),
-	            std::make_tuple(_self, ledgers_itr->user, ledgers_itr->quantity, "bonus")
+	            std::make_tuple(_self, ledgers_itr->user, ledgers_itr->quantity, std::string("bonus"))
 	         ).send();
 
 	         ledgers_itr ++;
@@ -298,12 +298,34 @@ extern "C" {
          eosio::action(
             eosio::permission_level{ _self, N(active) },
             N(eosio.token), N(transfer),
-            std::make_tuple(_self, prize_offerbet_itr->from, prize_total, "prize")
+            std::make_tuple(_self, prize_offerbet_itr->from, prize_total, std::string("prize"))
          ).send();
+
+         bet_index ++;
+         globalindexs.modify(cur_globalindex_itr, 0, [&](auto& info) {
+        	 info.gindex = bet_index;
+         });
+
+         {
+        	 offerbet_index offetbets(_self, _self);
+			  auto offetbets_itr = offetbets.begin();
+			  while(offetbets_itr != offetbets.end()) {
+					  offetbets_itr = offetbets.erase(offetbets_itr);
+			  }
+		  }
+
+		  {
+			  betnumber_index betnumbers(_self, _self);
+			  auto betnumbers_itr = betnumbers.begin();
+			  while(betnumbers_itr != betnumbers.end()) {
+					  betnumbers_itr = betnumbers.erase(betnumbers_itr);
+			  }
+		  }
+
 	 }
 
 	 //
-     if(code == N(eospoll) && action == N(reset)) {
+     if(code == N(eospool) && action == N(reset)) {
     	 {
     		 offerbet_index offetbets(_self, _self);
 			 auto offetbets_itr = offetbets.begin();
