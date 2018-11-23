@@ -56,14 +56,14 @@ extern "C" {
 	struct player {
 		account_name      user;
 		account_name      proxyer;
-		uint64_t primary_key() const { return user; }
+		account_name primary_key() const { return user; }
 	};
 	typedef eosio::multi_index< N(player), player> player_index;
 
 	struct ledger {
 		account_name      user;
 		eosio::asset      quantity;
-		uint64_t primary_key() const {return user;}
+		account_name primary_key() const {return user;}
 	};
 	typedef eosio::multi_index< N(ledger), ledger> ledger_index;
 
@@ -134,7 +134,7 @@ extern "C" {
 		 account_name proxyer = N(memo);
 		 auto cur_proxyer_itr = players.find(proxyer);
 		 if(cur_proxyer_itr == players.end()) {
-			 proxyer = N(NONE);
+			 proxyer = N(none);
 		 } else {
 			 //
 		 }
@@ -181,7 +181,7 @@ extern "C" {
          checksum256 hash;
          sha256((char*)(&t_now), sizeof(uint32_t), &hash);
          uint64_t bet_result = hash.hash[1];
-         bet_result << 32;
+         bet_result = bet_result << 32;
          bet_result |= hash.hash[0];
          bet_result = bet_result % cur_betstate_itr->total;
          //uint64_t bet_result = N(hash.hash);
@@ -211,7 +211,7 @@ extern "C" {
 			 //
 			 auto cur_player_itr = players.find(user);
 			 account_name proxy1 = cur_player_itr->proxyer;
-			 if(proxy1 == N(NONE)) {
+			 if(proxy1 == N(none)) {
 				 continue;
 			 }
 
@@ -220,19 +220,19 @@ extern "C" {
 			 if(cur_ledger_itr == ledgers.end()) {
 				 cur_ledger_itr = ledgers.emplace(_self, [&](auto& info) {
 					 info.user       = proxy1;
-					 info.quantity   = amount * 0.1;
-				 })
+					 info.quantity   = amount/10;
+				 });
 			 } else {
 				 //
 				 ledgers.modify( cur_ledger_itr, 0, [&](auto& info) {
-					 info.quantity   += amount * 0.1;
+					 info.quantity   += amount/10;
 				 });
 			 }
 
 			 //
 			 cur_player_itr = players.find(proxy1);
 			 account_name proxy2 = cur_player_itr->proxyer;
-			 if(proxy2 == N(NONE)) {
+			 if(proxy2 == N(none)) {
 				 continue;
 			 }
 
@@ -241,12 +241,12 @@ extern "C" {
 			 if(cur_ledger_itr == ledgers.end()) {
 				 cur_ledger_itr = ledgers.emplace(_self, [&](auto& info) {
 					 info.user       = proxy2;
-					 info.quantity   = amount * 0.05;
+					 info.quantity   = (amount*5)/100;
 				 })
 			 } else {
 				 //
 				 ledgers.modify( cur_ledger_itr, 0, [&](auto& info) {
-					 info.quantity   += amount * 0.05;
+					 info.quantity   += (amount*5)/100;
 				 });
 			 }
 
@@ -254,7 +254,7 @@ extern "C" {
 			 //
 			 cur_player_itr = players.find(proxy2);
 			 account_name proxy3 = cur_player_itr->proxyer;
-			 if(proxy3 == N(NONE)) {
+			 if(proxy3 == N(none)) {
 				 continue;
 			 }
 
@@ -263,12 +263,12 @@ extern "C" {
 			 if(cur_ledger_itr == ledgers.end()) {
 				 cur_ledger_itr = ledgers.emplace(_self, [&](auto& info) {
 					 info.user       = proxy3;
-					 info.quantity   = amount * 0.03;
+					 info.quantity   = (amount*3)/100;
 				 })
 			 } else {
 				 //
 				 ledgers.modify( cur_ledger_itr, 0, [&](auto& info) {
-					 info.quantity   += amount * 0.03;
+					 info.quantity   += (amount*3)/100;
 				 });
 			 }
 		 }
@@ -291,9 +291,9 @@ extern "C" {
 		 //
          //
          auto prize_betnumber_itr = betnumbers.find(bet_result);
-         auto prize_offerbet_itr = offerbets.find(betnumber_itr->offerbetid);
+         auto prize_offerbet_itr = offerbets.find(prize_betnumber_itr->offerbetid);
 		 eosio::asset prize_total = cur_betstate_itr->quantity - proxy_total;
-		 prize_total = prize_toal * 0.9;
+		 prize_total = (prize_total*9)/10;
 
          eosio::action(
             eosio::permission_level{ _self, N(active) },
