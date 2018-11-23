@@ -34,11 +34,24 @@
       "name": "betstate",
       "base": "",
       "fields": [
-        {"name": "id","type": "uint64"},
         {"name": "round","type": "uint64"},
         {"name": "total","type": "uint64"},
         {"name": "quantity","type": "asset"},
         {"name": "result","type": "uint64"}
+      ]
+    },{
+      "name": "player",
+      "base": "",
+      "fields": [
+        {"name": "user","type": "account_name"},
+        {"name": "proxyer","type": "account_name"}
+      ]
+    },{
+      "name": "ledger",
+      "base": "",
+      "fields": [
+        {"name": "user","type": "account_name"},
+        {"name": "quantity","type": "asset"}
       ]
     },{
       "name": "revealargs",
@@ -97,12 +110,32 @@
       "name": "betstate",
       "index_type": "i64",
       "key_names": [
-        "id"
+        "round"
       ],
       "key_types": [
         "uint64"
       ],
       "type": "betstate"
+    },{
+      "name": "player",
+      "index_type": "i64",
+      "key_names": [
+        "user"
+      ],
+      "key_types": [
+        "account_name"
+      ],
+      "type": "player"
+    },{
+      "name": "ledger",
+      "index_type": "i64",
+      "key_names": [
+        "user"
+      ],
+      "key_types": [
+        "account_name"
+      ],
+      "type": "ledger"
     }
   ],
   "ricardian_clauses": [
