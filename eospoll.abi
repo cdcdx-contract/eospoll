@@ -6,7 +6,7 @@
       }
   ],
   "structs": [{
-      "name": "offerbet",
+      "name": "betoffer",
       "base": "",
       "fields": [
         {"name": "id","type": "uint64"},
@@ -35,19 +35,21 @@
       "base": "",
       "fields": [
         {"name": "round","type": "uint64"},
+        {"name": "counter","type": "uint64"},
         {"name": "total","type": "uint64"},
         {"name": "quantity","type": "asset"},
+        {"name": "proxy","type": "asset"},
         {"name": "result","type": "uint64"}
       ]
     },{
-      "name": "player",
+      "name": "betplayer",
       "base": "",
       "fields": [
         {"name": "user","type": "account_name"},
         {"name": "proxyer","type": "account_name"}
       ]
     },{
-      "name": "ledger",
+      "name": "betledger",
       "base": "",
       "fields": [
         {"name": "user","type": "account_name"},
@@ -77,7 +79,7 @@
     }
   ],
   "tables": [{
-      "name": "offerbet",
+      "name": "betoffer",
       "index_type": "i64",
       "key_names": [
         "id"
@@ -85,7 +87,7 @@
       "key_types": [
         "uint64"
       ],
-      "type": "offerbet"
+      "type": "betoffer"
     },{
       "name": "betnumber",
       "index_type": "i64",
@@ -117,7 +119,7 @@
       ],
       "type": "betstate"
     },{
-      "name": "player",
+      "name": "betplayer",
       "index_type": "i64",
       "key_names": [
         "user"
@@ -125,9 +127,9 @@
       "key_types": [
         "account_name"
       ],
-      "type": "player"
+      "type": "betplayer"
     },{
-      "name": "ledger",
+      "name": "betledger",
       "index_type": "i64",
       "key_names": [
         "user"
@@ -135,7 +137,7 @@
       "key_types": [
         "account_name"
       ],
-      "type": "ledger"
+      "type": "betledger"
     }
   ],
   "ricardian_clauses": [

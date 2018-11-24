@@ -9,17 +9,42 @@
 
 extern "C" {
 	struct transferargs {
-	   account_name    from;
-	   account_name    to;
-	   eosio::asset    quantity;
-	   std::string     memo;
+	   account_name      from;
+	   account_name      to;
+	   eosio::asset      quantity;
+	   std::string       memo;
 	};
 
 	struct revealargs {
-	   uint64_t        tip;
+	   uint64_t          tip;
 	};
 
-    struct offerbet {
+	struct globalindex {
+	   uint64_t          id;
+	   uint64_t          gindex;
+	   uint64_t primary_key()const { return id; }
+	};
+	typedef eosio::multi_index< N(globalindex), globalindex> globalindex_index;
+
+	struct betplayer {
+		account_name      user;
+		account_name      proxyer;
+		account_name primary_key() const { return user; }
+	};
+	typedef eosio::multi_index< N(betplayer), betplayer> betplayer_index;
+
+	struct betstate {
+	   uint64_t          round;
+	   uint64_t          counter;
+	   uint64_t          total;
+	   eosio::asset      quantity;
+	   eosio::asset      proxy;
+	   uint64_t          result;
+	   uint64_t primary_key()const { return round; }
+	};
+	typedef eosio::multi_index< N(betstate), betstate> betstate_index;
+
+    struct betoffer {
     	uint64_t         id;
     	account_name     from;
     	account_name     to;
@@ -27,7 +52,7 @@ extern "C" {
     	std::string      memo;
     	uint64_t primary_key() const {return id;}
     };
-    typedef eosio::multi_index<N(offerbet), offerbet> offerbet_index;
+    typedef eosio::multi_index<N(betoffer), betoffer> betoffer_index;
 
 	struct betnumber {
 	   uint64_t          id;
@@ -37,35 +62,12 @@ extern "C" {
 	};
 	typedef eosio::multi_index< N(betnumber), betnumber> betnumber_index;
 
-	struct globalindex {
-	   uint64_t          id;
-	   uint64_t          gindex;
-	   uint64_t primary_key()const { return id; }
-	};
-	typedef eosio::multi_index< N(globalindex), globalindex> globalindex_index;
-
-	struct betstate {
-	   uint64_t          round;
-	   uint64_t          total;
-	   eosio::asset      quantity;
-	   uint64_t          result;
-	   uint64_t primary_key()const { return round; }
-	};
-	typedef eosio::multi_index< N(betstate), betstate> betstate_index;
-
-	struct player {
-		account_name      user;
-		account_name      proxyer;
-		account_name primary_key() const { return user; }
-	};
-	typedef eosio::multi_index< N(player), player> player_index;
-
-	struct ledger {
+	struct betledger {
 		account_name      user;
 		eosio::asset      quantity;
 		account_name primary_key() const {return user;}
 	};
-	typedef eosio::multi_index< N(ledger), ledger> ledger_index;
+	typedef eosio::multi_index< N(betledger), betledger> betledger_index;
 
    /// The apply method implements the dispatch of events to this contract
    void apply( uint64_t receiver, uint64_t code, uint64_t action ) {
@@ -100,11 +102,13 @@ extern "C" {
 	 //
 	 uint64_t bet_total = cur_betstate_itr->total;
 	 eosio::asset bet_quantity = cur_betstate_itr->quantity;
+	 eosio::asset bet_proxy = cur_betstate_itr->proxy;
 
 	 //
-	 offerbet_index offerbets(_self, _self);
+	 betoffer_index betoffers(_self, _self);
 	 betnumber_index betnumbers(_self, _self);
-	 player_index players(_self, _self);
+	 betplayer_index betplayers(_self, _self);
+	 betledger_index betledgers(_self, _self);
 
 	 //
 	 if(code == N(eosio.token) && action == N(transfer)) {
@@ -121,54 +125,126 @@ extern "C" {
 	    eosio_assert( args.quantity.is_valid(), "invalid quantity" );
 	    eosio_assert( args.quantity.amount > 0, "must issue positive quantity" );
 
-		 auto new_offerbet_itr = offerbets.emplace(_self, [&](auto& info){
-			info.id           = offerbets.available_primary_key();
+		 auto new_betoffer_itr = betoffers.emplace(_self, [&](auto& info){
+			info.id           = betoffers.available_primary_key();
 			info.from         = args.from;
 			info.to           = args.to;
 			info.quantity     = args.quantity;
 			info.memo         = args.memo;
 		 });
 
-		 // proxyer????
-		 std::string memo = args.memo;
-		 account_name proxyer = N(memo);
-		 auto cur_proxyer_itr = players.find(proxyer);
-		 if(cur_proxyer_itr == players.end()) {
-			 proxyer = N(none);
-		 } else {
-			 //
-		 }
+		 // user has register??
+		 auto cur_betplayer_itr = betplayers.find(args.from);
+		 if(cur_betplayer_itr == betplayers.end()) {
 
-		 //
-		 auto cur_player_itr = players.find(args.from);
-		 if(cur_player_itr == players.end()) {
-			 cur_player_itr = players.emplace(_self, [&](auto& info){
-				 info.user    = args.from;
+			 // get the proxyer
+			 account_name proxyer = eosio::string_to_name(args.memo);
+			 auto proxy_itr = betplayers.find(proxyer);
+			 if(proxy_itr == betplayers.end()) {
+				 proxyer = N(none);
+			 }
+
+			 //
+			 cur_betplayer_itr = betplayers.emplace(_self, [&](auto& info){
+				 info.user = args.from;
 				 info.proxyer = proxyer;
 			 });
 		 }
 
+		 // get code
 		 eosio::asset temp;
 		 temp.set_amount(10000);
+		 eosio::asset amount;
 
 		 while(args.quantity >= temp) {
 			 args.quantity = args.quantity - temp;
 
 			 auto new_betnumber_itr = betnumbers.emplace(_self, [&](auto& info){
 				info.id           = betnumbers.available_primary_key();
-				info.offerbetid   = new_offerbet_itr->id;
+				info.offerbetid   = new_betoffer_itr->id;
 				info.number       = info.id;
 			 });
 
 			 //
 			 bet_total ++;
 			 bet_quantity += temp;
+			 amount += temp;
 		 }
 
-		 //
+		 // update ledger
+		 do {
+			 account_name proxyer1 = cur_betplayer_itr->proxyer;
+			 if(proxyer1 == N(none)) {
+				 break;
+			 }
+
+			 //
+			 auto proxyer1_betledger_itr = betledgers.find(proxyer1);
+			 if(proxyer1_betledger_itr == betledgers.end()) {
+				 proxyer1_betledger_itr = betledgers.emplace(_self, [&](auto& info) {
+					 info.user       = proxyer1;
+					 info.quantity   = amount/10;
+				 });
+			 } else {
+				 //
+				 betledgers.modify( proxyer1_betledger_itr, 0, [&](auto& info) {
+					 info.quantity   += amount/10;
+				 });
+			 }
+			 bet_proxy += amount/10;
+
+			 //
+			 auto proxyer1_betplayer_itr = betplayers.find(proxyer1);
+			 account_name proxyer2 = proxyer1_betplayer_itr->proxyer;
+			 if(proxyer2 == N(none)) {
+				 break;
+			 }
+
+			 //
+			 auto proxyer2_betledger_itr = betledgers.find(proxyer2);
+			 if(proxyer2_betledger_itr == betledgers.end()) {
+				 proxyer2_betledger_itr = betledgers.emplace(_self, [&](auto& info) {
+					 info.user       = proxyer2;
+					 info.quantity   = (amount*5)/100;
+				 });
+			 } else {
+				 //
+				 betledgers.modify( proxyer2_betledger_itr, 0, [&](auto& info) {
+					 info.quantity   += (amount*5)/100;
+				 });
+			 }
+			 bet_proxy += (amount*5)/100;
+
+
+			 //
+			 auto proxyer2_betplayer_itr = betplayers.find(proxyer2);
+			 account_name proxyer3 = proxyer2_betplayer_itr->proxyer;
+			 if(proxyer3 == N(none)) {
+				 break;
+			 }
+
+			 //
+			 auto proxyer3_betledger_itr = betledgers.find(proxyer3);
+			 if(proxyer3_betledger_itr == betledgers.end()) {
+				 proxyer3_betledger_itr = betledgers.emplace(_self, [&](auto& info) {
+					 info.user       = proxyer3;
+					 info.quantity   = (amount*3)/100;
+				 });
+			 } else {
+				 //
+				 betledgers.modify( proxyer3_betledger_itr, 0, [&](auto& info) {
+					 info.quantity   += (amount*3)/100;
+				 });
+			 }
+			 bet_proxy += (amount*3)/100;
+		 } while(false);
+
+		 // update bet state
 		 betstates.modify( cur_betstate_itr, 0, [&](auto& info) {
 			 info.total = bet_total;
 			 info.quantity = bet_quantity;
+			 info.proxy = bet_proxy;
+			 info.counter ++;
 		 });
 	 }
 
@@ -193,184 +269,115 @@ extern "C" {
 			 info.result = bet_result;
 		 });
 
-
-         //
-         ledger_index ledgers(_self, _self);
-		 auto ledgers_itr = ledgers.begin();
-		 while(ledgers_itr != ledgers.end()) {
-			 ledgers_itr = ledgers.erase(ledgers_itr);
+         // prize
+         auto prize_betnumber_itr = betnumbers.find(bet_result);
+         auto prize_betoffer_itr = betoffers.find(prize_betnumber_itr->offerbetid);
+		 eosio::asset prize_total = cur_betstate_itr->quantity - cur_betstate_itr->proxy;
+		 prize_total = (prize_total*9)/10;
+		 account_name prize_account = prize_betoffer_itr->from;
+		 auto prize_betledger_itr = betledgers.find(prize_account);
+		 if(prize_betledger_itr == betledgers.end()) {
+			 prize_betledger_itr = betledgers.emplace(_self, [&](auto& info) {
+				 info.user       = prize_account;
+				 info.quantity   = prize_total;
+			 });
+		 } else {
+			 //
+			 betledgers.modify( prize_betledger_itr, 0, [&](auto& info) {
+				 info.quantity   += prize_total;
+			 });
 		 }
 
-		 //
-		 auto offerbet_itr = offerbets.begin();
-		 while(offerbet_itr != offerbets.end()) {
-			 account_name user = offerbet_itr->from;
-			 eosio::asset amount = offerbet_itr->quantity;
-			 offerbet_itr ++;
-
-			 //
-			 auto cur_player_itr = players.find(user);
-			 account_name proxy1 = cur_player_itr->proxyer;
-			 if(proxy1 == N(none)) {
-				 continue;
-			 }
-
-			 //
-			 auto cur_ledger_itr = ledgers.find(proxy1);
-			 if(cur_ledger_itr == ledgers.end()) {
-				 cur_ledger_itr = ledgers.emplace(_self, [&](auto& info) {
-					 info.user       = proxy1;
-					 info.quantity   = amount/10;
-				 });
-			 } else {
-				 //
-				 ledgers.modify( cur_ledger_itr, 0, [&](auto& info) {
-					 info.quantity   += amount/10;
-				 });
-			 }
-
-			 //
-			 cur_player_itr = players.find(proxy1);
-			 account_name proxy2 = cur_player_itr->proxyer;
-			 if(proxy2 == N(none)) {
-				 continue;
-			 }
-
-			 //
-			 cur_ledger_itr = ledgers.find(proxy2);
-			 if(cur_ledger_itr == ledgers.end()) {
-				 cur_ledger_itr = ledgers.emplace(_self, [&](auto& info) {
-					 info.user       = proxy2;
-					 info.quantity   = (amount*5)/100;
-				 });
-			 } else {
-				 //
-				 ledgers.modify( cur_ledger_itr, 0, [&](auto& info) {
-					 info.quantity   += (amount*5)/100;
-				 });
-			 }
-
-
-			 //
-			 cur_player_itr = players.find(proxy2);
-			 account_name proxy3 = cur_player_itr->proxyer;
-			 if(proxy3 == N(none)) {
-				 continue;
-			 }
-
-			 //
-			 cur_ledger_itr = ledgers.find(proxy3);
-			 if(cur_ledger_itr == ledgers.end()) {
-				 cur_ledger_itr = ledgers.emplace(_self, [&](auto& info) {
-					 info.user       = proxy3;
-					 info.quantity   = (amount*3)/100;
-				 });
-			 } else {
-				 //
-				 ledgers.modify( cur_ledger_itr, 0, [&](auto& info) {
-					 info.quantity   += (amount*3)/100;
-				 });
-			 }
-		 }
-
-		 //
-		 ledgers_itr = ledgers.begin();
-		 eosio::asset proxy_total;
-		 while(ledgers_itr != ledgers.end()) {
-			 proxy_total += ledgers_itr->quantity;
-
+		 // transfer
+		 auto betledger_itr = betledgers.begin();
+		 while(betledger_itr != betledgers.end()) {
 	         eosio::action(
 	            eosio::permission_level{ _self, N(active) },
 	            N(eosio.token), N(transfer),
-	            std::make_tuple(_self, ledgers_itr->user, ledgers_itr->quantity, std::string("bonus"))
+	            std::make_tuple(_self, betledger_itr->user, betledger_itr->quantity, std::string("bonus"))
 	         ).send();
 
-	         ledgers_itr ++;
+	         betledger_itr ++;
 		 }
 
-		 //
-         //
-         auto prize_betnumber_itr = betnumbers.find(bet_result);
-         auto prize_offerbet_itr = offerbets.find(prize_betnumber_itr->offerbetid);
-		 eosio::asset prize_total = cur_betstate_itr->quantity - proxy_total;
-		 prize_total = (prize_total*9)/10;
-
-         eosio::action(
-            eosio::permission_level{ _self, N(active) },
-            N(eosio.token), N(transfer),
-            std::make_tuple(_self, prize_offerbet_itr->from, prize_total, std::string("prize"))
-         ).send();
-
+		 // next round
          bet_index ++;
          globalindexs.modify(cur_globalindex_itr, 0, [&](auto& info) {
         	 info.gindex = bet_index;
          });
 
          {
-        	 offerbet_index offetbets(_self, _self);
-			  auto offetbets_itr = offetbets.begin();
-			  while(offetbets_itr != offetbets.end()) {
-					  offetbets_itr = offetbets.erase(offetbets_itr);
+        	 betoffer_index betoffers(_self, _self);
+			  auto betoffer_itr = betoffers.begin();
+			  while(betoffer_itr != betoffers.end()) {
+				  betoffer_itr = betoffers.erase(betoffer_itr);
 			  }
 		  }
 
 		  {
 			  betnumber_index betnumbers(_self, _self);
-			  auto betnumbers_itr = betnumbers.begin();
-			  while(betnumbers_itr != betnumbers.end()) {
-					  betnumbers_itr = betnumbers.erase(betnumbers_itr);
+			  auto betnumber_itr = betnumbers.begin();
+			  while(betnumber_itr != betnumbers.end()) {
+				  betnumber_itr = betnumbers.erase(betnumber_itr);
 			  }
 		  }
+
+	         //
+	         betledger_index betledgers(_self, _self);
+			 auto betledger_itr = betledgers.begin();
+			 while(betledger_itr != betledgers.end()) {
+				 betledger_itr = betledgers.erase(betledger_itr);
+			 }
 
 	 }
 
 	 //
      if(code == N(eospool) && action == N(reset)) {
     	 {
-    		 offerbet_index offetbets(_self, _self);
-			 auto offetbets_itr = offetbets.begin();
-			 while(offetbets_itr != offetbets.end()) {
-				 offetbets_itr = offetbets.erase(offetbets_itr);
+    		 betoffer betoffers(_self, _self);
+			 auto betoffer_itr = betoffers.begin();
+			 while(betoffer_itr != betoffers.end()) {
+				 betoffer_itr = betoffers.erase(betoffer_itr);
 			 }
     	 }
 
     	 {
     		 betnumber_index betnumbers(_self, _self);
-			 auto betnumbers_itr = betnumbers.begin();
-			 while(betnumbers_itr != betnumbers.end()) {
-				 betnumbers_itr = betnumbers.erase(betnumbers_itr);
+			 auto betnumber_itr = betnumbers.begin();
+			 while(betnumber_itr != betnumbers.end()) {
+				 betnumber_itr = betnumbers.erase(betnumber_itr);
 			 }
     	 }
 
     	 {
     		 globalindex_index globalindexs(_self, _self);
-			 auto globalindexs_itr = globalindexs.begin();
-			 while(globalindexs_itr != globalindexs.end()) {
-				 globalindexs_itr = globalindexs.erase(globalindexs_itr);
+			 auto globalindex_itr = globalindexs.begin();
+			 while(globalindex_itr != globalindexs.end()) {
+				 globalindex_itr = globalindexs.erase(globalindex_itr);
 			 }
     	 }
 
     	 {
     		 betstate_index betstates(_self, _self);
-			 auto betstates_itr = betstates.begin();
-			 while(betstates_itr != betstates.end()) {
-				 betstates_itr = betstates.erase(betstates_itr);
+			 auto betstate_itr = betstates.begin();
+			 while(betstate_itr != betstates.end()) {
+				 betstate_itr = betstates.erase(betstate_itr);
 			 }
     	 }
 
     	 {
-    		 player_index players(_self, _self);
-			 auto players_itr = players.begin();
-			 while(players_itr != players.end()) {
-				 players_itr = players.erase(players_itr);
+    		 betplayer_index betplayers(_self, _self);
+			 auto betplayer_itr = betplayers.begin();
+			 while(betplayer_itr != betplayers.end()) {
+				 betplayer_itr = betplayers.erase(betplayer_itr);
 			 }
     	 }
 
     	 {
-    		 ledger_index ledgers(_self, _self);
-			 auto ledgers_itr = ledgers.begin();
-			 while(ledgers_itr != ledgers.end()) {
-				 ledgers_itr = ledgers.erase(ledgers_itr);
+    		 betledger_index betledgers(_self, _self);
+			 auto betledger_itr = betledgers.begin();
+			 while(betledger_itr != betledgers.end()) {
+				 betledger_itr = betledgers.erase(betledger_itr);
 			 }
     	 }
      }
